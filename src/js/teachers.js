@@ -1,5 +1,3 @@
-import { randomUserMock, additionalUsers } from "./FE4U-Lab2-mock.js";
-
 export const COURSES = [
   "Mathematics",
   "Physics",
@@ -14,24 +12,6 @@ export const COURSES = [
   "Medicine",
   "Statistics",
 ];
-
-const PHONE_FORMATS = {
-  Germany: /^\d{4}-\d{7}$/,
-  Ireland: /^\d{3}-\d{3}-\d{4}$/,
-  Australia: /^\d{2}-\d{4}-\d{4}$/,
-  "United States": /^\(\d{3}\)-\d{3}-\d{4}$/,
-  Finland: /^\d{2}-\d{3}-\d{3}$/,
-  Turkey: /^\(\d{3}\)-\d{3}-\d{4}$/,
-  Switzerland: /^\d{3} \d{3} \d{2} \d{2}$/,
-  "New Zealand": /^\(\d{3}\)-\d{3}-\d{4}$/,
-  Spain: /^\d{3}-\d{3}-\d{3}$/,
-  Norway: /^\d{8}$/,
-  Iran: /^\d{3}-\d{8}$/,
-  Canada: /^\d{3}-\d{3}-\d{4}$/,
-  France: /^\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$/,
-  Denmark: /^\d{8}$/,
-  Netherlands: /^\(\d{3}\)-\d{3}-\d{4}$/,
-};
 
 function randomCourse() {
   const index = Math.floor(Math.random() * COURSES.length);
@@ -60,7 +40,7 @@ function calcAge(dateString) {
     now.getMonth() > birth.getMonth() ||
     (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
   if (!hadBirthday) {
-    age = age - 1;
+    age -= 1;
   }
   return age;
 }
@@ -69,7 +49,7 @@ function convertMockUser(user) {
   return {
     gender: user.gender,
     title: user.name.title,
-    full_name: user.name.first + " " + user.name.last,
+    full_name: `${user.name.first} ${user.name.last}`,
     city: user.location.city,
     state: user.location.state,
     country: user.location.country,
@@ -87,7 +67,7 @@ function convertMockUser(user) {
 }
 
 function convertExtraUser(user) {
-  const result = Object.assign({}, user);
+  const result = { ...user };
   if (result.b_day !== undefined) {
     result.b_date = result.b_day;
     delete result.b_day;
@@ -134,46 +114,48 @@ export function formatUsers(mockUsers, extraUsers) {
   return result;
 }
 
-function startsWithCapital(value) {
-  if (typeof value !== "string" || value.length === 0) {
-    return false;
-  }
-  return value[0] === value[0].toUpperCase();
-}
-
 export function validateUser(user) {
-  const stringFields = [
-    "full_name",
-    "gender",
-    "note",
-    "state",
-    "city",
-    "country",
-  ];
-  for (const field of stringFields) {
-    if (!startsWithCapital(user[field])) {
-      return false;
-    }
+  const fields = ["full_name", "gender", "city", "country"];
+  for (const field of fields) {
+    if (typeof user[field] !== "string" || !user[field].trim()) return false;
   }
-
-  if (typeof user.age !== "number") {
-    return false;
-  }
-
-  if (typeof user.email !== "string" || !user.email.includes("@")) {
-    return false;
-  }
-
-  const phoneFormat = PHONE_FORMATS[user.country];
+  if (!Number.isInteger(user.age) || user.age < 0) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) return false;
   if (
     typeof user.phone !== "string" ||
-    !phoneFormat ||
-    !phoneFormat.test(user.phone)
+    !/^[+0-9() .-]{7,25}$/.test(user.phone)
   ) {
     return false;
   }
-
+  const phoneDigits = user.phone.replace(/\D/g, "");
+  if (phoneDigits.length < 7) return false;
+  const birth = new Date(user.b_date);
+  if (Number.isNaN(birth.getTime()) || birth > new Date()) return false;
   return true;
+}
+
+export async function fetchUsers(count, page, seed) {
+  const url = `https://randomuser.me/api/?results=${count}&page=${page}&seed=${encodeURIComponent(seed)}`;
+  const response = await fetch(url);
+  if (!response.ok)
+    throw new Error("Could not load teachers. Please try again.");
+  const data = await response.json();
+  if (data.error || !Array.isArray(data.results) || !data.results.length) {
+    throw new Error("No teachers received. Please try again.");
+  }
+  return formatUsers(data.results, []);
+}
+
+export async function saveUser(user) {
+  const response = await fetch("http://localhost:3002/teachers", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(user),
+  });
+  if (!response.ok) {
+    throw new Error("Could not save the teacher. Please try again.");
+  }
+  return response.json();
 }
 
 export function filterUsers(users, filters) {
@@ -254,4 +236,4 @@ export function matchPercentage(users, predicate) {
   return (count / users.length) * 100;
 }
 
-export const users = formatUsers(randomUserMock, additionalUsers);
+export const users = [];

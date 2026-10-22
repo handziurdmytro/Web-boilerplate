@@ -1,6 +1,14 @@
-import { users, COURSES, filterUsers, sortUsers } from "./teachers.js";
+import {
+  users as teacherUsers,
+  COURSES,
+  filterUsers as filterTeachers,
+  sortUsers as sortTeachers,
+  fetchUsers,
+  validateUser,
+  saveUser,
+} from "./teachers.js";
 
-export function setupTeachers(users, courses, filterUsers, sortUsers) {
+export default function setupTeachers(users, courses, filterUsers, sortUsers) {
   const grid = document.querySelector(".teachers-grid");
   const favoritesGrid = document.querySelector(".favorites-grid");
   const filters = document.querySelector(".teachers-filters");
@@ -28,25 +36,48 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
   }
 
   function fillSelect(select, values, allLabel) {
-    select.textContent = "";
+    select.replaceChildren();
     if (allLabel) select.add(new Option(allLabel, ""));
-    for (const value of values) select.add(new Option(value, value));
-  }
-
-  const countries = ["Ukraine"];
-  for (const user of users) {
-    if (user.country && !countries.includes(user.country)) {
-      countries.push(user.country);
+    for (let i = 0; i < values.length; i += 1) {
+      select.add(new Option(values[i], values[i]));
     }
   }
-  countries.sort();
-  fillSelect(countryFilter, countries, "All countries");
+
+  function updateCountries() {
+    const selectedCountry = countryFilter.value;
+    const newCountry = document.querySelector("#new-country");
+    const selectedNewCountry = newCountry.value || "Ukraine";
+    const countries = ["Ukraine"];
+    for (let i = 0; i < users.length; i += 1) {
+      const user = users[i];
+      if (user.country && !countries.includes(user.country)) {
+        countries.push(user.country);
+      }
+    }
+    countries.sort();
+    fillSelect(countryFilter, countries, "All countries");
+    countryFilter.value = selectedCountry;
+    fillSelect(newCountry, countries);
+    newCountry.value = selectedNewCountry;
+  }
+
+  updateCountries();
   ageFilter.insertBefore(new Option("All ages", ""), ageFilter.firstChild);
   ageFilter.value = "";
   fillSelect(genderFilter, ["Male", "Female"], "All genders");
-  fillSelect(document.querySelector("#new-country"), countries);
-  document.querySelector("#new-country").value = "Ukraine";
   fillSelect(document.querySelector("#new-speciality"), courses);
+
+  const loadButton = element("button", "btn-add-teacher", "Next");
+  loadButton.type = "button";
+  const loadStatus = element("p");
+  loadStatus.setAttribute("role", "status");
+  grid.after(loadStatus, loadButton);
+  const statisticsCount = element("p");
+  table.before(statisticsCount);
+  let loading = false;
+  let initialLoaded = false;
+  let nextPage = 6;
+  const seed = `teachinder-${Date.now()}`;
 
   const fields = ["full_name", "course", "age", "gender", "country", "b_date"];
   const labels = [
@@ -72,7 +103,7 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     box.style.backgroundColor = user.bg_color;
     const parts = user.full_name.trim().split(/\s+/);
     let initials = parts[0][0];
-    if (parts.length > 1) initials += "." + parts[parts.length - 1][0];
+    if (parts.length > 1) initials += `.${parts[parts.length - 1][0]}`;
     const placeholder = element("span", "initials", initials.toUpperCase());
     if (user.picture_large || user.picture_thumbnail) {
       const img = element("img");
@@ -90,8 +121,9 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
   }
 
   function renderCards(container, list) {
-    container.textContent = "";
-    for (const user of list) {
+    container.replaceChildren();
+    for (let i = 0; i < list.length; i += 1) {
+      const user = list[i];
       const link = element("a");
       link.href = "#teacher-info-modal";
       link.dataset.user = users.indexOf(user);
@@ -117,39 +149,41 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     if (genderFilter.value) options.gender = genderFilter.value;
     if (document.querySelector("#filter-favourites").checked)
       options.favorite = true;
-    const result = [];
-    for (const user of filterUsers(users, options)) {
+    return filterUsers(users, options).filter((user) => {
       const age = ageFilter.value;
-      if (age === "18-31" && !(user.age >= 18 && user.age <= 31)) continue;
-      if (age === "32-60" && !(user.age >= 32 && user.age <= 60)) continue;
-      if (age === "61+" && !(user.age >= 61)) continue;
+      if (age === "18-31" && !(user.age >= 18 && user.age <= 31)) return false;
+      if (age === "32-60" && !(user.age >= 32 && user.age <= 60)) return false;
+      if (age === "61+" && !(user.age >= 61)) return false;
       if (
         document.querySelector("#filter-with-photo").checked &&
         !user.picture_large &&
         !user.picture_thumbnail
       )
-        continue;
+        return false;
       if (
         query &&
         !user.full_name.toLowerCase().includes(query) &&
         !(user.note || "").toLowerCase().includes(query) &&
         String(user.age) !== query
       )
-        continue;
-      result.push(user);
-    }
-    return result;
+        return false;
+      return true;
+    });
   }
 
   function renderStatistics(list) {
+    statisticsCount.textContent = `Teachers: ${list.length} of ${users.length}`;
     const sorted = sortUsers(list, sortField, sortOrder);
     const pageCount = Math.ceil(sorted.length / pageSize);
     page = Math.max(1, Math.min(page, pageCount));
     const body = table.querySelector("tbody");
     body.textContent = "";
-    for (const user of sorted.slice((page - 1) * pageSize, page * pageSize)) {
+    const pageUsers = sorted.slice((page - 1) * pageSize, page * pageSize);
+    for (let i = 0; i < pageUsers.length; i += 1) {
+      const user = pageUsers[i];
       const row = element("tr");
-      for (const field of fields) {
+      for (let j = 0; j < fields.length; j += 1) {
+        const field = fields[j];
         let value = user[field];
         if (field === "b_date" && value) value = value.slice(0, 10);
         row.appendChild(element("td", "", value === undefined ? "—" : value));
@@ -159,12 +193,14 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     for (let i = 0; i < fields.length; i += 1) {
       const heading = headingRow.children[i];
       const active = fields[i] === sortField;
-      heading.textContent =
-        labels[i] + (active ? (sortOrder === "asc" ? " ↑" : " ↓") : "");
-      heading.setAttribute(
-        "aria-sort",
-        active ? (sortOrder === "asc" ? "ascending" : "descending") : "none",
-      );
+      let arrow = "";
+      let direction = "none";
+      if (active) {
+        arrow = sortOrder === "asc" ? " ↑" : " ↓";
+        direction = sortOrder === "asc" ? "ascending" : "descending";
+      }
+      heading.textContent = labels[i] + arrow;
+      heading.setAttribute("aria-sort", direction);
     }
     const pagination = document.querySelector(".pagination ul");
     pagination.textContent = "";
@@ -205,6 +241,38 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     renderFavorites();
   }
 
+  async function loadTeachers() {
+    if (loading) return;
+    loading = true;
+    loadButton.disabled = true;
+    loadStatus.textContent = "Loading teachers...";
+    try {
+      const count = initialLoaded ? 10 : 50;
+      const requestPage = initialLoaded ? nextPage : 1;
+      const received = await fetchUsers(count, requestPage, seed);
+      for (let i = 0; i < received.length; i += 1) {
+        const user = received[i];
+        if (!users.some((existing) => existing.id === user.id)) {
+          users.push(user);
+        }
+      }
+      if (initialLoaded) nextPage += 1;
+      initialLoaded = true;
+      loadButton.textContent = "Next";
+      loadStatus.textContent = "";
+      updateCountries();
+      render();
+    } catch (error) {
+      loadStatus.textContent = "Could not load teachers. Please try again.";
+      loadButton.textContent = "Retry";
+    } finally {
+      loading = false;
+      loadButton.disabled = false;
+    }
+  }
+
+  loadButton.addEventListener("click", loadTeachers);
+
   function showTeacher(user) {
     selectedUser = user;
     const photo = modal.querySelector(".teacher-details-photo");
@@ -216,10 +284,10 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
       .filter(Boolean)
       .join(", ");
     modal.querySelector(".demographics").textContent =
-      (user.age === undefined ? "Unknown age" : user.age) + ", " + user.gender;
+      `${user.age === undefined ? "Unknown age" : user.age}, ${user.gender}`;
     const email = modal.querySelector(".email-link");
     email.textContent = user.email || "No email";
-    if (user.email) email.href = "mailto:" + user.email;
+    if (user.email) email.href = `mailto:${user.email}`;
     else email.removeAttribute("href");
     modal.querySelector(".phone").textContent = user.phone || "No phone";
     modal.querySelector(".teacher-details-notes").textContent = user.note;
@@ -234,7 +302,7 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     star.setAttribute("aria-pressed", String(user.favorite));
   }
 
-  document.addEventListener("click", function (event) {
+  document.addEventListener("click", (event) => {
     const card = event.target.closest("[data-user]");
     if (card) showTeacher(users[Number(card.dataset.user)]);
     if (event.target.closest(".favorite-star-outline") && selectedUser) {
@@ -270,7 +338,7 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
       window.location.hash = "";
   });
 
-  document.addEventListener("keydown", function (event) {
+  document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") window.location.hash = "";
     if (
       (event.key === "Enter" || event.key === " ") &&
@@ -281,14 +349,14 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     }
   });
 
-  filters.addEventListener("change", function () {
+  filters.addEventListener("change", () => {
     page = 1;
     render();
   });
-  filters.addEventListener("submit", function (event) {
+  filters.addEventListener("submit", (event) => {
     event.preventDefault();
   });
-  searchForm.addEventListener("submit", function (event) {
+  searchForm.addEventListener("submit", (event) => {
     event.preventDefault();
     query = searchForm.querySelector("input").value.trim().toLowerCase();
     page = 1;
@@ -303,23 +371,34 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     "new-dob",
     "sex-male",
   ];
-  for (const id of requiredIds) document.getElementById(id).required = true;
+  for (let i = 0; i < requiredIds.length; i += 1) {
+    document.getElementById(requiredIds[i]).required = true;
+  }
   document.querySelector("#new-name").pattern = ".*\\S.*";
   document.querySelector("#new-city").pattern = ".*\\S.*";
-  document.querySelector("#new-phone").pattern = "[+0-9\\(\\) .\\-]{7,25}";
+  document.querySelector("#new-phone").pattern =
+    "(?=(?:\\D*\\d){7})[+0-9\\(\\) .\\-]{7,25}";
+  document.querySelector("#new-phone").title =
+    "Enter a phone number with at least 7 digits.";
   const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
   document.querySelector("#new-dob").max =
-    today.getFullYear() +
-    "-" +
-    String(today.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(today.getDate()).padStart(2, "0");
+    `${today.getFullYear()}-${month}-${day}`;
 
-  addForm.addEventListener("submit", function (event) {
+  const formStatus = element("p");
+  formStatus.setAttribute("role", "status");
+  addForm.appendChild(formStatus);
+
+  const submitButton = addForm.querySelector('[type="submit"]');
+  let saving = false;
+
+  addForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (saving) return;
     if (!addForm.reportValidity()) return;
     const data = new FormData(addForm);
-    const birth = new Date(data.get("dob") + "T00:00:00");
+    const birth = new Date(`${data.get("dob")}T00:00:00`);
     const now = new Date();
     let age = now.getFullYear() - birth.getFullYear();
     if (
@@ -328,7 +407,7 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
     )
       age -= 1;
     const user = {
-      id: "teacher-" + Date.now() + "-" + users.length,
+      id: `teacher-${Date.now()}-${users.length}`,
       full_name: data.get("name").trim(),
       course: data.get("speciality"),
       country: data.get("country"),
@@ -336,20 +415,39 @@ export function setupTeachers(users, courses, filterUsers, sortUsers) {
       email: data.get("email").trim(),
       phone: data.get("phone").trim(),
       b_date: data.get("dob"),
-      age: age,
+      age,
       gender: data.get("sex") === "male" ? "Male" : "Female",
       bg_color: data.get("color"),
       note: data.get("notes").trim() || "No notes",
       favorite: false,
     };
-    users.push(user);
-    addForm.reset();
-    render();
-    showTeacher(user);
-    window.location.hash = "teacher-info-modal";
+    if (!validateUser(user)) {
+      formStatus.textContent =
+        "Please enter a valid name, location, email, phone and date of birth.";
+      return;
+    }
+    saving = true;
+    submitButton.disabled = true;
+    formStatus.textContent = "Saving teacher...";
+    try {
+      const savedUser = await saveUser(user);
+      users.push(savedUser);
+      addForm.reset();
+      formStatus.textContent = "";
+      render();
+      showTeacher(savedUser);
+      window.location.hash = "teacher-info-modal";
+    } catch (error) {
+      formStatus.textContent =
+        "Could not save the teacher. Check that JSON Server is running and try again.";
+    } finally {
+      saving = false;
+      submitButton.disabled = false;
+    }
   });
 
   render();
+  loadTeachers();
 }
 
-setupTeachers(users, COURSES, filterUsers, sortUsers);
+setupTeachers(teacherUsers, COURSES, filterTeachers, sortTeachers);
