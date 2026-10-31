@@ -1,3 +1,15 @@
+import {
+  map,
+  find,
+  filter,
+  orderBy,
+  uniqBy,
+  isString,
+  isInteger,
+  isEmpty,
+  trim,
+} from "lodash";
+
 export const COURSES = [
   "Mathematics",
   "Physics",
@@ -79,19 +91,11 @@ function convertExtraUser(user) {
 }
 
 export function formatUsers(mockUsers, extraUsers) {
-  const result = [];
-
-  for (const mockUser of mockUsers) {
-    const user = convertMockUser(mockUser);
-    const exists = result.find((u) => u.full_name === user.full_name);
-    if (!exists) {
-      result.push(user);
-    }
-  }
+  const result = uniqBy(map(mockUsers, convertMockUser), "full_name");
 
   for (const extraUser of extraUsers) {
     const user = convertExtraUser(extraUser);
-    const exists = result.find((u) => u.full_name === user.full_name);
+    const exists = find(result, { full_name: user.full_name });
     if (exists) {
       for (const key in user) {
         if (user[key] !== null && user[key] !== undefined) {
@@ -116,15 +120,13 @@ export function formatUsers(mockUsers, extraUsers) {
 
 export function validateUser(user) {
   const fields = ["full_name", "gender", "city", "country"];
-  for (const field of fields) {
-    if (typeof user[field] !== "string" || !user[field].trim()) return false;
-  }
-  if (!Number.isInteger(user.age) || user.age < 0) return false;
+  const hasRequiredFields = fields.every(
+    (field) => isString(user[field]) && !isEmpty(trim(user[field])),
+  );
+  if (!hasRequiredFields) return false;
+  if (!isInteger(user.age) || user.age < 0) return false;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) return false;
-  if (
-    typeof user.phone !== "string" ||
-    !/^[+0-9() .-]{7,25}$/.test(user.phone)
-  ) {
+  if (!isString(user.phone) || !/^[+0-9() .-]{7,25}$/.test(user.phone)) {
     return false;
   }
   const phoneDigits = user.phone.replace(/\D/g, "");
@@ -159,80 +161,48 @@ export async function saveUser(user) {
 }
 
 export function filterUsers(users, filters) {
-  const result = [];
-
-  for (const user of users) {
-    let ok = true;
+  return filter(users, (user) => {
     if (filters.country !== undefined && user.country !== filters.country) {
-      ok = false;
+      return false;
     }
     if (filters.age !== undefined && user.age !== filters.age) {
-      ok = false;
+      return false;
     }
     if (filters.gender !== undefined && user.gender !== filters.gender) {
-      ok = false;
+      return false;
     }
     if (filters.favorite !== undefined && user.favorite !== filters.favorite) {
-      ok = false;
+      return false;
     }
-    if (ok) {
-      result.push(user);
-    }
-  }
-
-  return result;
+    return true;
+  });
 }
 
 export function sortUsers(users, field, order) {
-  const copy = users.slice();
-
-  copy.sort((a, b) => {
-    const first = a[field];
-    const second = b[field];
-
-    if (first === undefined && second === undefined) return 0;
-    if (first === undefined) return 1;
-    if (second === undefined) return -1;
-
-    let diff;
-    if (typeof first === "string") {
-      diff = first.localeCompare(second);
-    } else {
-      diff = first - second;
-    }
-
-    return order === "desc" ? -diff : diff;
-  });
-
-  return copy;
+  return orderBy(
+    users,
+    [(user) => (user[field] === undefined ? null : user[field])],
+    [order === "desc" ? "desc" : "asc"],
+  );
 }
 
 export function findUser(users, field, query) {
-  if (field === "name") {
-    field = "full_name";
-  }
+  const key = field === "name" ? "full_name" : field;
 
-  for (const user of users) {
-    const value = user[field];
-    if (typeof query === "number") {
-      if (value === query) {
-        return user;
-      }
-    } else if (typeof value === "string") {
-      if (value.toLowerCase().includes(query.toLowerCase())) {
-        return user;
-      }
-    }
-  }
-
-  return undefined;
+  return find(users, (user) => {
+    const value = user[key];
+    if (typeof query === "number") return value === query;
+    return (
+      isString(value) && value.toLowerCase().includes(String(query).toLowerCase())
+    );
+  });
 }
 
 export function matchPercentage(users, predicate) {
   if (users.length === 0) {
     return 0;
   }
-  const count = users.filter(predicate).length;
+  const count = filter(users, predicate).length;
   return (count / users.length) * 100;
 }
 

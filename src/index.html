@@ -96,16 +96,21 @@
 
       <section class="statistics-container" id="statistics">
         <h2>Statistics</h2>
-        <table class="statistics-table">
-          <thead>
-            <tr></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <p class="statistics-count"></p>
 
-        <nav class="pagination">
-          <ul></ul>
-        </nav>
+        <div class="statistics-chart">
+          <canvas class="statistics-piechart"></canvas>
+        </div>
+
+        <div class="statistics-pivot-controls">
+          <button type="button" class="btn-pivot-view active" data-pivot-view="country">
+            Country report
+          </button>
+          <button type="button" class="btn-pivot-view" data-pivot-view="flat">
+            All teachers (flat table)
+          </button>
+        </div>
+        <div class="statistics-pivot"></div>
       </section>
 
       <hr />
@@ -236,6 +241,7 @@
             <p class="subject"></p>
             <p class="location"></p>
             <p class="demographics"></p>
+            <p class="birthday-countdown"></p>
             <a class="email-link"></a
             >
             <p class="phone"></p>
@@ -243,8 +249,8 @@
         </div>
         <p class="teacher-details-notes"></p>
         <a href="#" class="toggle-map-link">toggle map</a>
+        <div class="teacher-map" hidden></div>
       </div>
     </div>
-    <script type="module" src="./js/app.js"></script>
   </body>
 </html>
