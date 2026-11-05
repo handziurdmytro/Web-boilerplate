@@ -1,0 +1,19 @@
+{
+  "teachers": [
+    {
+      "id": "teacher-1792652373564-50",
+      "full_name": "Volodymyr Shevchenko",
+      "course": "English",
+      "country": "Ukraine",
+      "city": "Київ",
+      "email": "volod.sh@gmail.com",
+      "phone": "0998887766",
+      "b_date": "2004-02-19",
+      "age": 22,
+      "gender": "Male",
+      "bg_color": "#e14747",
+      "note": "No notes",
+      "favorite": false
+    }
+  ]
+}
