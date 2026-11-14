@@ -6,6 +6,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import Chart from "chart.js/auto";
 import dayjs from "dayjs";
+import { filter } from "lodash";
 import WebDataRocks from "@webdatarocks/webdatarocks";
 import "@webdatarocks/webdatarocks/webdatarocks.css";
 import {
@@ -286,7 +287,7 @@ export default function setupTeachers(users, courses, filterUsers) {
     if (genderFilter.value) options.gender = genderFilter.value;
     if (document.querySelector("#filter-favourites").checked)
       options.favorite = true;
-    return filterUsers(users, options).filter((user) => {
+    return filter(filterUsers(users, options), (user) => {
       const age = ageFilter.value;
       if (age === "18-31" && !(user.age >= 18 && user.age <= 31)) return false;
       if (age === "32-60" && !(user.age >= 32 && user.age <= 60)) return false;
