@@ -1,0 +1,252 @@
+:root {
+  --color-bg: #f2f4f7;
+  --color-surface: #ffffff;
+  --color-text: #1d2433;
+  --color-muted: #6b7385;
+  --color-primary: #1f75cb;
+  --color-primary-dark: #185fa6;
+  --color-error: #c62828;
+  --color-error-bg: #fdecea;
+  --radius: 8px;
+  --shadow: 0 2px 10px rgb(0 0 0 / 8%);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.login-form {
+  width: 100%;
+  max-width: 340px;
+  padding: 28px;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.login-form h1 {
+  margin: 0 0 20px;
+  font-size: 1.4rem;
+  text-align: center;
+}
+
+.login-form label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 12px;
+}
+
+.login-form input[type="text"],
+.login-form input[type="password"] {
+  margin-top: 4px;
+  padding: 8px 2px;
+  border: none;
+  border-bottom: 2px solid #d0d5dd;
+  font: inherit;
+  outline: none;
+}
+
+.login-form input:focus {
+  border-bottom-color: var(--color-primary);
+}
+
+.login-form input[aria-invalid="true"] {
+  border-bottom-color: var(--color-error);
+}
+
+.login-form .checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  margin-top: 16px;
+}
+
+.login-form button {
+  margin-top: 20px;
+  padding: 10px;
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.login-form button:hover {
+  background: var(--color-primary-dark);
+}
+
+.field-error {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--color-error);
+}
+
+.form-error {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  color: var(--color-error);
+  background: var(--color-error-bg);
+  font-size: 0.9rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.logo {
+  font-weight: 700;
+}
+
+.user {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--color-muted);
+}
+
+.link-button {
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  padding: 0;
+}
+
+.dashboard main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.location {
+  font-size: 1.8rem;
+  font-weight: 400;
+  margin: 0 0 20px;
+}
+
+.location small {
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.forecast {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.weather-card {
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.weather-card-title {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.weather-card-icon {
+  font-size: 2.6rem;
+  margin: 8px 0 0;
+}
+
+.weather-card-label {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+}
+
+.weather-card-temp {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 8px;
+}
+
+.weather-card-details {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.weather-card-details dt {
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.weather-card-details dd {
+  margin: 0;
+}
+
+.wind-arrow {
+  display: inline-block;
+}
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 0;
+  color: var(--color-muted);
+}
+
+.loader-spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #d0d5dd;
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-box {
+  padding: 20px;
+  text-align: center;
+  border-radius: var(--radius);
+  color: var(--color-error);
+  background: var(--color-error-bg);
+}
+
+.error-box button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 20px;
+  color: #fff;
+  background: var(--color-primary);
+}

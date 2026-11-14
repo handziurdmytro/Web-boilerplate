@@ -1,27 +1,10 @@
-### Prerequisites
+# Lab 6 — Weather App (React + react-router)
 
-Prerequisites: Node.js (^10.12.0, or >=12.0.0) 
-
-### Get started
-```
-  git clone https://github.com/Uaman/Web-boilerplate.git frontend-labs
-  cd frontend-labs
-  npm i
-  npm start
+```bash
+npm i
+npm run dev        # http://localhost:5173
 ```
 
-### Put your files into /src folder
+Login / password: `dmytro3` / `dmytro3`.
 
-### For build
-
-```
-  npm run build
-```
-
-### For lint
-
-```
-  npm run lint      // lint js files
-  npm run stylelint // lint css files
-```
-
+Weather data: [Open-Meteo](https://open-meteo.com/) (metaweather API is no longer available).
