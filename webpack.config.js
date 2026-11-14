@@ -6,7 +6,6 @@ const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const HtmlReplaceWebpackPlugin = require("html-replace-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 const ImageminPlugin = require("imagemin-webpack-plugin").default;
-const MinifyPlugin = require("babel-minify-webpack-plugin");
 
 const devMode = process.env.NODE_ENV !== "production";
 
@@ -58,7 +57,7 @@ const CONFIG = {
       },
     ]),
     new ImageminPlugin({
-      disable: devMode,
+      disable: true,
       test: /\.(jpe?g|png|gif|svg)$/i,
       optipng: { optimizationLevel: 3 },
       jpegtran: { progressive: true },
@@ -92,12 +91,24 @@ const CONFIG = {
           },
           {
             loader: "sass-loader",
-            options: { sourceMap: true },
+            options: {
+              sourceMap: true,
+              sassOptions: { outputStyle: "expanded" },
+            },
           },
         ],
       },
       {
         test: /\.(png|jpg|gif)$/,
+        use: [
+          {
+            loader: "file-loader",
+            options: {},
+          },
+        ],
+      },
+      {
+        test: /\.(woff|woff2|ttf|eot|svg)$/,
         use: [
           {
             loader: "file-loader",
@@ -120,12 +131,11 @@ const CONFIG = {
 if (!devMode) {
   CONFIG.output.publicPath = "./";
   CONFIG.output.filename = "js/app.js";
-  CONFIG.plugins.push(new MinifyPlugin());
   CONFIG.module.rules.push({
     test: [/\.js$/],
     exclude: [/node_modules/],
     loader: "babel-loader",
-    options: { presets: ["env"] },
+    options: { presets: ["@babel/preset-env"] },
   });
 }
 
